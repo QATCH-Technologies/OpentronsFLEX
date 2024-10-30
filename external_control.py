@@ -1,7 +1,10 @@
+import os
+
+os.system("systemctl stop opentrons-robot-server")
+# os.system("systemctl start opentrons-robot-server")
+
 import opentrons.execute
 from opentrons import protocol_api
-
-
 from opentrons.protocol_api import PARTIAL_COLUMN, ALL
 
 # metadata
@@ -40,5 +43,7 @@ def run(protocol: protocol_api.ProtocolContext):
 
 if __name__ == "__main__":
     protocol = opentrons.execute.get_protocol_api("2.20")
+    protocol.set_rail_lights(on=True)
     protocol.home()
     run(protocol)
+    protocol.set_rail_lights(on=False)
