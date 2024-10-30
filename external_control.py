@@ -1,11 +1,10 @@
-import os
-
-os.system("systemctl stop opentrons-robot-server")
-# os.system("systemctl start opentrons-robot-server")
-
 import opentrons.execute
 from opentrons import protocol_api
 from opentrons.protocol_api import PARTIAL_COLUMN, ALL
+import subprocess
+# os.system("systemctl stop opentrons-robot-server")
+# os.system("systemctl start opentrons-robot-server")
+
 
 # metadata
 metadata = {
@@ -17,6 +16,24 @@ metadata = {
 requirements = {"robotType": "Flex", "apiLevel": "2.20"}
 
 NUM_COLS = 6
+
+
+def start_service(service_name):
+    try:
+        # Run the command to start the service
+        subprocess.run(["net", "start", service_name], check=True)
+        print(f"Service '{service_name}' started successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to start service '{service_name}'. Error: {e}")
+
+
+def stop_service(service_name):
+    try:
+        # Run the command to stop the service
+        subprocess.run(["net", "stop", service_name], check=True)
+        print(f"Service '{service_name}' stopped successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to stop service '{service_name}'. Error: {e}")
 
 
 def run(protocol: protocol_api.ProtocolContext):
@@ -42,6 +59,7 @@ def run(protocol: protocol_api.ProtocolContext):
 
 
 if __name__ == "__main__":
+    start_service("opentrons-robot-server")
     protocol = opentrons.execute.get_protocol_api("2.20")
     protocol.set_rail_lights(on=True)
     protocol.home()
