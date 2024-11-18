@@ -16,8 +16,8 @@ NUM_COLS = 6
 def run(protocol: protocol_api.ProtocolContext):
     reservoir = protocol.load_labware("biorad_96_wellplate_200ul_pcr", "D2")
     pool = protocol.load_labware("biorad_96_wellplate_200ul_pcr", "B2")
-
-    swamp = protocol.load_trash_bin("B3")
+    swamp = protocol.load_labware("biorad_96_wellplate_200ul_pcr", "B3")
+    # swamp = protocol.load_trash_bin("B3")
     nanovis = protocol.load_labware("nanovis_q_4x6", "D3")
 
     trash = protocol.load_trash_bin("A3")
@@ -37,8 +37,8 @@ def run(protocol: protocol_api.ProtocolContext):
         left_pipette.dispense(3, nanovis[f"D{i+1}"])
         # protocol.delay(minute=2, seconds=1)
         protocol.pause(msg="Pausing for measurements...")
-        left_pipette.aspirate(30, pool[f"D{i+1}"])
-        left_pipette.blow_out(location=swamp)
-        left_pipette.blow_out(location=swamp)
+        left_pipette.aspirate(47, pool[f"D{i+1}"])
+        left_pipette.dispense(50, swamp[f"D{i+1}"])
+        # left_pipette.blow_out(location=swamp)
         # left_pipette.return_tip()
         left_pipette.drop_tip(location=trash)
