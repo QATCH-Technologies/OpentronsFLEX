@@ -37,7 +37,7 @@ class FlexMountPositions(Enum):
     RIGHT_MOUNT = "right"
 
 
-class FlexLocations(Enum):
+class FlexDeckLocations(Enum):
     A1 = "A1"
     A2 = "A2"
     A3 = "A3"

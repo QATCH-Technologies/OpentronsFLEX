@@ -14,20 +14,33 @@ class FlexRuns:
         :param payload: Dictionary payload to be sent as JSON.
         :return: Parsed JSON response or None in case of errors.
         """
+        headers = {"Content-Type": "application/json"}
+        headers.update(HEADERS)
         try:
             # Prepare the payload if provided
-            json_payload = json.dumps(payload) if payload else None
-            response = requests.request(
-                method=method,
-                url=url,
-                headers=HEADERS,
-                data=json_payload
-            )
+            if payload:
+                json_payload = json.dumps(payload) if payload else None
+                response = requests.request(
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    data=json_payload
+                )
+            else:
+                response = requests.request(
+                    method=method,
+                    url=url,
+                    headers=headers,
+                )
             response.raise_for_status()  # Raise an exception for HTTP errors
-            return response.json()  # Return the parsed JSON response
+            return response.json()
         except requests.exceptions.RequestException as e:
             print(f"Error sending {method} request to {url}: {e}")
             return None
+
+    @staticmethod
+    def create_run(runs_url: str):
+        return FlexRuns._send_request("POST", runs_url, payload=None)
 
     @staticmethod
     def run_protocol(runs_url: str, protocol_id: int):

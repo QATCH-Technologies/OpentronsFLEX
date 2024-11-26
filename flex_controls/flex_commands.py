@@ -1,6 +1,6 @@
 import json
 import requests
-from flex_constants import FlexCommandType, FlexIntents, FlexAxis, HEADERS
+from flex_constants import FlexCommandType, FlexIntents, FlexAxis, FlexDeckLocations, HEADERS
 from flex_pipette import FlexPipette
 from flex_labware import FlexLabware
 
@@ -12,17 +12,17 @@ class FlexCommands:
         """Creates the base structure for the command with common functionality."""
         return {
             "data": {
-                "commandType": command_type,
+                "commandType": command_type.value,
                 "params": params,
-                "intent": intents
+                "intent": intents.value
             }
         }
 
     @staticmethod
-    def load_labware(location, load_name: str, name_space: str, version: int):
+    def load_labware(location: FlexDeckLocations, load_name: str, name_space: str, version: int):
         """Creates a command body for loading labware."""
         params = {
-            "location": location,
+            "location": location.value,
             "loadName": load_name,
             "namespace": name_space,
             "version": version
@@ -132,14 +132,15 @@ class FlexCommands:
     def send_command(command_url: str, command_dict: dict):
         """Send the command to the server and return the command id."""
         # Convert command_dict to JSON payload
-        command_payload = json.dumps(command_dict, indent=4)
-        print(f"Command:\n{command_payload}")
-
+        command_payload = json.dumps(command_dict)
+        headers = {"Content-Type": "application/json"}
+        headers.update(HEADERS)
         # Send POST request
         try:
-            response = requests.post(
+            response = requests.request(
+                method="POST",
                 url=command_url,
-                headers=HEADERS,
+                headers=headers,
                 params={"waitUntilComplete": True},
                 data=command_payload
             )

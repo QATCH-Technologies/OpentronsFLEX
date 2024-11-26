@@ -1,6 +1,6 @@
 import json
 from typing import List, Dict, Any
-from flex_constants import FlexLocations
+from flex_constants import FlexDeckLocations
 
 
 class Ordering:
@@ -9,16 +9,16 @@ class Ordering:
 
 
 class Brand:
-    def __init__(self, brand: str, brand_id: List[str]):
+    def __init__(self, brand: str, brandId: List[str]):
         self.brand = brand
-        self.brand_id = brand_id
+        self.brand_id = brandId
 
 
 class Metadata:
-    def __init__(self, display_name: str, display_category: str, display_volume_units: str, tags: List[str]):
-        self.display_name = display_name
-        self.display_category = display_category
-        self.display_volume_units = display_volume_units
+    def __init__(self, displayName: str, displayCategory: str, displayVolumeUnits: str, tags: List[str]):
+        self.display_name = displayName
+        self.display_category = displayCategory
+        self.display_volume_units = displayVolumeUnits
         self.tags = tags
 
     def get_display_name(self):
@@ -29,16 +29,16 @@ class Metadata:
 
 
 class Dimensions:
-    def __init__(self, x_dimension: float, y_dimension: float, z_dimension: float):
-        self.x_dimension = x_dimension
-        self.y_dimension = y_dimension
-        self.z_dimension = z_dimension
+    def __init__(self, xDimension: float, yDimension: float, zDimension: float):
+        self.x_dimension = xDimension
+        self.y_dimension = yDimension
+        self.z_dimension = zDimension
 
 
 class Well:
-    def __init__(self, depth: float, total_liquid_volume: float, shape: str, diameter: float, x: float, y: float, z: float):
+    def __init__(self, depth: float, totalLiquidVolume: float, shape: str, diameter: float, x: float, y: float, z: float):
         self.depth = depth
-        self.total_liquid_volume = total_liquid_volume
+        self.total_liquid_volume = totalLiquidVolume
         self.shape = shape
         self.diameter = diameter
         self.x = x
@@ -52,8 +52,8 @@ class Wells:
 
 
 class GroupMetadata:
-    def __init__(self, well_bottom_shape: str):
-        self.well_bottom_shape = well_bottom_shape
+    def __init__(self, wellBottomShape: str):
+        self.well_bottom_shape = wellBottomShape
 
 
 class Group:
@@ -63,12 +63,12 @@ class Group:
 
 
 class Parameters:
-    def __init__(self, format: str, quirks: List[str], is_tiprack: bool, is_magnetic_module_compatible: bool, load_name: str):
+    def __init__(self, format: str, quirks: List[str], isTiprack: bool, isMagneticModuleCompatible: bool, loadName: str):
         self.format = format
         self.quirks = quirks
-        self.is_tiprack = is_tiprack
-        self.is_magnetic_module_compatible = is_magnetic_module_compatible
-        self.load_name = load_name
+        self.is_tiprack = isTiprack
+        self.is_magnetic_module_compatible = isMagneticModuleCompatible
+        self.load_name = loadName
 
     def get_load_name(self) -> str:
         return self.load_name
@@ -99,7 +99,7 @@ class StackingOffsetWithLabware:
 
 
 class FlexLabware:
-    def __init__(self, id: int, location: FlexLocations, file_path: str):
+    def __init__(self, location: FlexDeckLocations, file_path: str):
         self.data = self.load_json(file_path)
         self.set_id(id)
         self.set_location(location)
@@ -122,7 +122,7 @@ class FlexLabware:
     def set_id(self, id: int) -> None:
         self._id = id
 
-    def set_location(self, location: FlexLocations) -> None:
+    def set_location(self, location: FlexDeckLocations) -> None:
         self._location = location
 
     # --- Accessor Methods --- #
@@ -133,11 +133,11 @@ class FlexLabware:
     def get_id(self) -> int:
         return self._id
 
-    def get_location(self) -> FlexLocations:
+    def get_location(self) -> FlexDeckLocations:
         return self._location
 
     def get_display_name(self) -> str:
-        return self.metadata.displayName
+        return self.metadata.display_name
 
     def get_load_name(self) -> str:
         return self.parameters.get_load_name()
