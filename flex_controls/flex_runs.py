@@ -84,18 +84,31 @@ class FlexRuns:
 
     @staticmethod
     def upload_protocol_custom_labware(
-        protocols_url: str, protocol_file_path: str, labware_file_path: str
+        protocols_url: str, protocol_file_path: str, labware_file_paths: list[str]
     ):
+        # Open the protocol file
         protocol_file_payload = open(protocol_file_path, "rb")
-        labware_file_payload = open(labware_file_path, "rb")
-        data = [("files", protocol_file_payload), ("files", labware_file_payload)]
-        response = FlexRuns._send_request("POST", protocols_url, data)
-        protocol_file_payload.close()
-        labware_file_payload.close()
-        return {
-            "protocol_id": response["data"]["id"],
-            "protocol_name": response["data"]["metadata"]["protocolName"],
-        }
+        data = [("files", protocol_file_payload)]
+
+        # Open and add each custom labware file to the payload
+        labware_file_payloads = []
+        try:
+            for labware_file_path in labware_file_paths:
+                labware_payload = open(labware_file_path, "rb")
+                labware_file_payloads.append(labware_payload)
+                data.append(("files", labware_payload))
+
+            # Send the request with all files
+            response = FlexRuns._send_request("POST", protocols_url, data)
+            return {
+                "protocol_id": response["data"]["id"],
+                "protocol_name": response["data"]["metadata"]["protocolName"],
+            }
+        finally:
+            # Ensure all files are closed
+            protocol_file_payload.close()
+            for labware_payload in labware_file_payloads:
+                labware_payload.close()
 
     @staticmethod
     def delete_run(runs_url: str, run_id: int):

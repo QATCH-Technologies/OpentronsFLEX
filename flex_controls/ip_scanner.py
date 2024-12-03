@@ -1,44 +1,38 @@
-from scapy.all import ARP, Ether, srp
+#!/usr/bin/env python
+
+import scapy.all as scapy
+import argparse
 
 
-def scan_network(ip_range):
-    """
-    Scans the given IP range for devices on the network.
-    :param ip_range: The range of IPs to scan (e.g., '192.168.1.1/24').
-    :return: List of dictionaries with 'ip' and 'mac' keys.
-    """
-    # Create an ARP request packet
-    arp = ARP(pdst=ip_range)
-    ether = Ether(dst="ff:ff:ff:ff:ff:ff")
-    packet = ether / arp
-
-    # Send the packet and capture the responses
-    result = srp(packet, timeout=2, verbose=False)[0]
-
-    # Parse the responses
-    devices = []
-    for sent, received in result:
-        devices.append({'ip': received.psrc, 'mac': received.hwsrc})
-
-    return devices
+def get_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-t", "--target", dest="target",
+                        help="Target IP/ IP Range ")
+    options = parser.parse_args()
+    return options
 
 
-if __name__ == "__main__":
-    # Define the network range to scan
-    # Pull up ipconfig from pc settings
-    # Filter by port 31950
-    # Check ARP table first for device
-    network_range = "172.28.24.0/16"  # Adjust the subnet as needed
-    print(f"Scanning network range: {network_range}")
+def scan(ip):
+    arp_request = scapy.ARP(pdst=ip)
+    broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
+    arp_request_broadcast = broadcast / arp_request
+    answered_list = scapy.srp(arp_request_broadcast,
+                              timeout=1, verbose=False)[0]
 
-    # Call the scan function
-    devices = scan_network(network_range)
+    clients_list = []
+    for element in answered_list:
+        client_dict = {"ip": element[1].psrc, "mac": element[1].hwsrc}
+        clients_list.append(client_dict)
 
-    # Print the discovered devices
-    if devices:
-        print("Discovered devices on the network:")
-        for device in devices:
-            if device["mac"] == "34:6F:24:31:17:EF":
-                print(f"IP: {device['ip']}, MAC: {device['mac']}")
-    else:
-        print("No devices found.")
+    return clients_list
+
+
+def print_result(results_list):
+    print("IP\t\t\tMAC Address\n-------------------------------------------------------")
+    for client in results_list:
+        print(client["ip"] + "\t\t" + client["mac"])
+
+
+options = get_arguments()
+scan_result = scan(options.target)
+print_result(scan_result)
