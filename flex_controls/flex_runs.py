@@ -17,8 +17,7 @@ class FlexRuns:
         try:
             if method == "POST":
                 if payload:
-                    if payload.get("file"):
-                        input("uploading protocol")
+                    if payload.get("files"):
                         response = requests.post(
                             url=url, headers=HEADERS, files=payload
                         )
@@ -64,7 +63,8 @@ class FlexRuns:
         response_json = FlexRuns._send_request("POST", runs_url, payload)
 
         if response_json:
-            run_id = [key for key in response_json["data"].keys() if "id" in key]
+            run_id = [key for key in response_json["data"].keys()
+                      if "id" in key]
             if run_id:
                 return run_id
             else:
@@ -83,7 +83,7 @@ class FlexRuns:
         data = {"files": protocol_file_payload}
         response = FlexRuns._send_request("POST", protocols_url, data)
         protocol_file_payload.close()
-        return response["data"]["id"]
+        return {"protocol_id": response["data"]["id"], "protocol_name": response["data"]["metadata"]["protocolName"]}
 
     @staticmethod
     def upload_protocol_cusom_labware(
@@ -91,7 +91,8 @@ class FlexRuns:
     ):
         protocol_file_payload = open(protocol_file_path, "rb")
         labware_file_payload = open(labware_file_path, "rb")
-        data = [("files", protocol_file_payload), ("files", labware_file_payload)]
+        data = [("files", protocol_file_payload),
+                ("files", labware_file_payload)]
         response = FlexRuns._send_request("POST", protocols_url, data)
         protocol_file_payload.close()
         labware_file_payload.close()
@@ -121,7 +122,8 @@ class FlexRuns:
     @staticmethod
     def pause_run(runs_url: str, run_id: int):
         actions_url = f"{runs_url}/{run_id}/actions"
-        action_payload = json.dumps({"data": {"actionType": FlexActions.PAUSE}})
+        action_payload = json.dumps(
+            {"data": {"actionType": FlexActions.PAUSE}})
         return FlexRuns._send_request("POST", actions_url, action_payload)
 
     @staticmethod

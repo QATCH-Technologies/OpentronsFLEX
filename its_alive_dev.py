@@ -27,8 +27,10 @@ def run(protocol: protocol_api.ProtocolContext):
     )
 
     left_pipette = protocol.load_instrument("flex_8channel_50", "left")
-    left_pipette.configure_nozzle_layout(style=PARTIAL_COLUMN, start="H1", end="E1")
-    tips_by_row = partial_rack.rows_by_name()["D"] + partial_rack.rows_by_name()["H"]
+    left_pipette.configure_nozzle_layout(
+        style=PARTIAL_COLUMN, start="H1", end="E1")
+    tips_by_row = partial_rack.rows_by_name(
+    )["D"] + partial_rack.rows_by_name()["H"]
 
     for i in range(NUM_COLS):
         pickup_location = tips_by_row.pop(0)
