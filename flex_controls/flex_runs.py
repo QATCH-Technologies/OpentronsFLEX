@@ -61,17 +61,14 @@ class FlexRuns:
             return None
 
     @staticmethod
-    def create_run(runs_url: str):
-        return FlexRuns._send_request("POST", runs_url, payload=None)
-
-    @staticmethod
-    def run_protocol(runs_url: str, protocol_id: int):
+    def run_protocol(runs_url: str, protocol_id: str):
         """Send the command to the server and return the command id."""
         payload = {"data": {"protocolId": protocol_id}}
         response_json = FlexRuns._send_request("POST", runs_url, payload)
 
         if response_json:
-            run_id = [key for key in response_json["data"].keys() if "id" in key]
+            run_id = [key for key in response_json["data"].keys()
+                      if "id" in key]
             if run_id:
                 return run_id
             else:
@@ -79,7 +76,7 @@ class FlexRuns:
         return None
 
     @staticmethod
-    def delete_protocol(protocols_url: str, protocol_id: int):
+    def delete_protocol(protocols_url: str, protocol_id: str):
         """Send the command to delete a protocol by id."""
         delete_protocol_url = f"{protocols_url}/{protocol_id}"
         return FlexRuns._send_request("DELETE", delete_protocol_url)
@@ -101,7 +98,8 @@ class FlexRuns:
     ):
         protocol_file_payload = open(protocol_file_path, "rb")
         labware_file_payload = open(labware_file_path, "rb")
-        data = [("files", protocol_file_payload), ("files", labware_file_payload)]
+        data = [("files", protocol_file_payload),
+                ("files", labware_file_payload)]
         response = FlexRuns._send_request("POST", protocols_url, data)
         protocol_file_payload.close()
         labware_file_payload.close()
@@ -132,21 +130,24 @@ class FlexRuns:
         return [run for run in response["data"]]
 
     @staticmethod
-    def pause_run(runs_url: str, run_id: int):
+    def pause_run(runs_url: str, run_id: str):
         actions_url = f"{runs_url}/{run_id}/actions"
-        action_payload = json.dumps({"data": {"actionType": FlexActions.PAUSE}})
+        action_payload = json.dumps(
+            {"data": {"actionType": FlexActions.PAUSE.value}})
         return FlexRuns._send_request("POST", actions_url, action_payload)
 
     @staticmethod
-    def play_run(runs_url: str, run_id: int):
+    def play_run(runs_url: str, run_id: str):
         actions_url = f"{runs_url}/{run_id}/actions"
-        action_payload = json.dumps({"data": {"actionType": FlexActions.PLAY}})
+        action_payload = json.dumps(
+            {"data": {"actionType": FlexActions.PLAY.value}})
         return FlexRuns._send_request("POST", actions_url, action_payload)
 
     @staticmethod
-    def stop_run(runs_url: str, run_id: int):
+    def stop_run(runs_url: str, run_id: str):
         actions_url = f"{runs_url}/{run_id}/actions"
-        action_payload = json.dumps({"data": {"actionType": FlexActions.STOP}})
+        action_payload = json.dumps(
+            {"data": {"actionType": FlexActions.STOP.value}})
         return FlexRuns._send_request("POST", actions_url, action_payload)
 
     @staticmethod
