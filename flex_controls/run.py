@@ -4,14 +4,14 @@ from standard_labware import StandardReservoirs
 
 
 if __name__ == "__main__":
-    robot = OpentronsFlex(mac_address="34:6F:24:31:17:EF",
-                          ip_address="172.28.24.236")
+    robot = OpentronsFlex(mac_address="34:6F:24:31:17:EF", ip_address="172.28.24.236")
     robot.lights_off()
-    robot.lights_on()
-    robot.lights_off()
-    robot.lights_on()
     input()
-    robot.upload_protocol(r'C:\Users\QATCH\dev\OpentronsFLEX\its_alive_dev.py')
+    robot.lights_on()
+    robot.lights_off()
+    robot.lights_on()
+    # input()
+    # robot.upload_protocol(r'C:\Users\QATCH\dev\OpentronsFLEX\its_alive_dev.py')
     # robot.load_labware(location=FlexDeckLocations.A1,
     #                    labware_definition=StandardReservoirs.AGILENT_1_RESERVOIR_290ML)
     # robot.load_labware(location=FlexDeckLocations.A2,
