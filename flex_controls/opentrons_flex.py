@@ -54,6 +54,10 @@ class OpentronsFlex:
         self._set_lights_url(f"{self._get_base_url()}/robot/lights")
         self._set_home_url(f"{self._get_base_url()}/robot/home")
         self.lights_on()
+        protocol_list = self.get_protocol_list()
+        for p in protocol_list:
+            print(p)
+        input()
         self.available_labware = {
             FlexDeckLocations.A1: None,
             FlexDeckLocations.A2: None,
@@ -402,7 +406,9 @@ class OpentronsFlex:
     def get_protocol_list(self) -> str:
         logging.info("Fetching protocol list.")
         try:
-            response = FlexRuns.get_protocols_list(runs_url=self._get_runs_url())
+            response = FlexRuns.get_protocols_list(
+                protocols_url=self._get_protocols_url()
+            )
             logging.info(f"Retrieved protocol list successfully. Response: {response}")
             return response
         except Exception as e:

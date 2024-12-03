@@ -29,7 +29,6 @@ class FlexRuns:
                             url=url, headers=HEADERS, files=payload
                         )
                     else:
-                        # If payload is anything else, treat it as JSON payload
                         json_payload = json.dumps(payload) if payload else None
                         response = requests.post(
                             url=url, headers=HEADERS, data=json_payload
@@ -49,8 +48,7 @@ class FlexRuns:
                         url=url, headers=HEADERS, data=json_payload
                     )
                 else:
-                    response = requests.post(
-                        method=method,
+                    response = requests.get(
                         url=url,
                         headers=HEADERS,
                     )
