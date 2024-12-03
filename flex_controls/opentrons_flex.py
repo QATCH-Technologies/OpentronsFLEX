@@ -1,19 +1,21 @@
 from flex_pipette import FlexPipette
-from flex_constants import FlexMountPositions, FlexPipettes, FlexDeckLocations, FlexAxis, FlexLights, ROBOT_IP, HEADERS, ROBOT_PORT
+from flex_constants import FlexMountPositions, FlexPipettes, FlexDeckLocations, FlexAxis, FlexLights, FlexSlotName, ROBOT_IP, HEADERS, ROBOT_PORT
 from flex_commands import FlexCommands
 from flex_runs import FlexRuns
 from flex_labware import FlexLabware
+from standard_labware import StandardLabware
 import requests
 import json
 import os
 import logging
 import re
+from typing import Union
 # from scapy.all import ARP, Ether, srp
 import socket
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s',
 )
 
 
@@ -34,11 +36,11 @@ class OpentronsFlex:
         #     ip = self.find_robot_ip()
 
         self._set_robot_ipv4(ip)
-        self._set_base_url(f'http://{self._get_robot_ip()}:{ROBOT_PORT}')
+        self._set_base_url(f'http://{self._get_robot_ipv4()}:{ROBOT_PORT}')
         self._set_runs_url(f"{self._get_base_url()}/runs")
-        self.create_run()
-        self._set_command_url(
-            f"{self._get_runs_url()}/{self._get_run_id()}/commands")
+        # self.create_run()
+        # self._set_command_url(
+        #     f"{self._get_runs_url()}/{self._get_run_id()}/commands")
         self._set_protocols_url(f"{self._get_base_url()}/protocols")
         self._set_lights_url(f"{self._get_base_url()}/robot/lights")
         self._set_home_url(f"{self._get_base_url()}/robot/home")
@@ -84,11 +86,11 @@ class OpentronsFlex:
             new_pipette.set_pipette_id(pipette_id)
             logging.debug("Right pipette loaded with ID: %s", pipette_id)
 
-    def load_labware(self, location: FlexDeckLocations, labware_file_path: str):
-        logging.info("Loading labware at location: %s from file: %s",
-                     location.value, labware_file_path)
+    def load_labware(self, location: FlexDeckLocations, labware_definition: Union[str, StandardLabware]) -> None:
+        logging.info("Loading labware at location: %s from definition: %s",
+                     location.value, labware_definition)
         labware = FlexLabware(location=location,
-                              file_path=labware_file_path)
+                              labware_definition=labware_definition)
         if self.available_labware.get(location) is not None:
             logging.error(
                 "Labware already loaded at location: %s", location.value)
@@ -96,9 +98,10 @@ class OpentronsFlex:
                 f'Labware {labware.get_display_name()} not available in slot {labware.get_location().value}.')
         self.available_labware[location] = labware
         payload = FlexCommands.load_labware(
-            location=location, load_name=labware.get_display_name(), name_space=labware.get_namespace(), version=labware.get_version())
+            location=location, load_name=labware.get_load_name(), name_space=labware.get_name_space(), version=labware.get_version())
         response = FlexCommands.send_command(
             command_url=self._get_command_url(), command_dict=payload)
+        print(response)
         labware.set_id(response["data"]["result"]["labwareId"])
         logging.debug("Labware loaded with ID: %s", labware.get_id())
 
@@ -106,7 +109,7 @@ class OpentronsFlex:
         logging.info(
             "Picking up tip from labware: %s with pipette: %s", labware.get_display_name(), pipette.get_id())
         self.validate_configuration(labware=labware, pipette=pipette)
-        if not labware.is_tiprack():
+        if not labware.get_is_tiprack():
             logging.error(
                 "Attempt to pick up tip from non-tiprack labware: %s", labware.get_display_name())
             raise Exception(
@@ -230,8 +233,8 @@ class OpentronsFlex:
                 f'Protocol path {protocol_file_path} does not exist')
 
         try:
-            response = FlexRuns.run_protocol(
-                runs_url=self._get_runs_url(), protocol_file_path=protocol_file_path
+            response = FlexRuns.upload_protocol(
+                protocols_url=self._get_protocols_url(), protocol_file_path=protocol_file_path
             )
             logging.info(
                 f"Protocol uploaded successfully. Response: {response}")
@@ -336,7 +339,7 @@ class OpentronsFlex:
         try:
             self.light_state = FlexLights.ON
             response = FlexRuns.set_lights(
-                lights_url=self._get_lights_url(), light_status=FlexLights.ON)
+                lights_url=self._get_lights_url(), light_status=FlexLights.ON.value)
             logging.info("Lights turned on successfully.")
             return response
         except Exception as e:
@@ -348,7 +351,7 @@ class OpentronsFlex:
         try:
             self.light_state = FlexLights.OFF
             response = FlexRuns.set_lights(
-                lights_url=self._get_lights_url(), light_status=FlexLights.OFF)
+                lights_url=self._get_lights_url(), light_status=FlexLights.OFF.value)
             logging.info("Lights turned off successfully.")
             return response
         except Exception as e:
@@ -496,7 +499,7 @@ class OpentronsFlex:
 
     # --- MUTATOR METHODS --- #
 
-    def _get_robot_ip(self) -> str:
+    def _get_robot_ipv4(self) -> str:
         return self._robot_ipv4
 
     def _get_robot_mac_address(self) -> str:
@@ -531,20 +534,3 @@ class OpentronsFlex:
 
     def _get_available_labware(self) -> dict:
         return self.available_labware
-
-
-if __name__ == "__main__":
-    robot = OpentronsFlex(mac_address="34:6F:24:31:17:EF",
-                          ip_address="127.0.0.1")
-    robot.load_labware(location=FlexDeckLocations.A1,
-                       labware_file_path=r'labware\nanovis_q_4x6.json')
-    robot.load_labware(location=FlexDeckLocations.A2,
-                       labware_file_path=r'labware\nanovis_q_4x6.json')
-    robot.load_pipette(FlexPipettes.P50_MULTI_FLEX,
-                       FlexMountPositions.LEFT_MOUNT)
-    input(robot.gantry.get(FlexMountPositions.LEFT_MOUNT))
-    robot.aspirate(robot.available_labware.get(
-        FlexDeckLocations.A1), robot.gantry.get(FlexMountPositions.LEFT_MOUNT), 100, 50)
-    print(robot._get_available_labware().get(
-        FlexDeckLocations.A1).get_display_name())
-    print(robot._get_left_pipette().get_id())

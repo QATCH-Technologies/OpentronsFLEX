@@ -1,6 +1,6 @@
 import json
 import requests
-from flex_constants import FlexCommandType, FlexIntents, FlexAxis, FlexDeckLocations, HEADERS
+from flex_constants import FlexCommandType, FlexIntents, FlexAxis, FlexDeckLocations, FlexSlotName, HEADERS
 from flex_pipette import FlexPipette
 from flex_labware import FlexLabware
 
@@ -22,7 +22,7 @@ class FlexCommands:
     def load_labware(location: FlexDeckLocations, load_name: str, name_space: str, version: int):
         """Creates a command body for loading labware."""
         params = {
-            "location": location.value,
+            "location": FlexSlotName.get_slot_name(location),
             "loadName": load_name,
             "namespace": name_space,
             "version": version
@@ -141,7 +141,6 @@ class FlexCommands:
                 method="POST",
                 url=command_url,
                 headers=headers,
-                params={"waitUntilComplete": True},
                 data=command_payload
             )
             response.raise_for_status()  # Raise an exception for HTTP errors

@@ -1,6 +1,14 @@
 import json
-from typing import List, Dict, Any
+import os
+from typing import List, Dict, Any, Union
 from flex_constants import FlexDeckLocations
+from standard_labware import StandardLabware
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s',
+)
 
 
 class Ordering:
@@ -99,31 +107,68 @@ class StackingOffsetWithLabware:
 
 
 class FlexLabware:
-    def __init__(self, location: FlexDeckLocations, file_path: str):
-        self.data = self.load_json(file_path)
-        self.set_id(id)
-        self.set_location(location)
-        self.ordering = Ordering(self.data["ordering"])
-        self.brand = Brand(**self.data["brand"])
-        self.metadata = Metadata(**self.data["metadata"])
-        self.dimensions = Dimensions(**self.data["dimensions"])
-        self.wells = Wells(self.data["wells"])
-        self.groups = [Group(**group) for group in self.data["groups"]]
-        self.parameters = Parameters(**self.data["parameters"])
-        self.namespace = self.data["namespace"]
-        self.version = self.data["version"]
-        self.schema_version = self.data["schemaVersion"]
-        self.corner_offset_from_slot = CornerOffsetFromSlot(
-            **self.data["cornerOffsetFromSlot"])
-        self.stacking_offset_with_labware = StackingOffsetWithLabware(
-            self.data["stackingOffsetWithLabware"])
+    def __init__(self, location: FlexDeckLocations, labware_definition: Union[str, StandardLabware]):
+        if isinstance(labware_definition, str) and os.path.isfile(labware_definition):
+            # Load Custom Labware from file (Probably only works for custom wellplates at the moment)
+            logging.error(
+                f"Loading custom labware definition from: {labware_definition} @ {location.value}")
+            self.data = self.load_json(labware_definition)
+            self.ordering = Ordering(self.data["ordering"])
+            self.brand = Brand(**self.data["brand"])
+            self.metadata = Metadata(**self.data["metadata"])
+            self.dimensions = Dimensions(**self.data["dimensions"])
+            self.wells = Wells(self.data["wells"])
+            self.groups = [Group(**group) for group in self.data["groups"]]
+            self.parameters = Parameters(**self.data["parameters"])
+            self.schema_version = self.data["schemaVersion"]
+            self.corner_offset_from_slot = CornerOffsetFromSlot(
+                **self.data["cornerOffsetFromSlot"])
+            self.stacking_offset_with_labware = StackingOffsetWithLabware(
+                self.data["stackingOffsetWithLabware"])
+
+            self.set_location(location)
+            self.set_display_name(self.metadata.display_name)
+            self.set_load_name(self.parameters.get_load_name())
+            self.set_name_space(self.data["namespace"])
+            self.set_version(self.data["version"])
+            self.set_is_tiprack(self.parameters.is_tiprack)
+        elif isinstance(labware_definition, StandardLabware):
+            logging.error(
+                f"Loading standard labware defintion {labware_definition.get_display_name()} @ {location.value}")
+            self.set_location(location=location)
+            self.set_display_name(labware_definition.get_display_name())
+            self.set_load_name(labware_definition.get_load_name())
+            self.set_name_space(labware_definition.get_name_space())
+            self.set_version(labware_definition.get_version())
+            self.set_is_tiprack(labware_definition.is_tiprack())
+        else:
+            logging.error("Invalid labware definition type: %s",
+                          type(labware_definition))
+            raise ValueError(
+                "labware_definition must be either a file path (str) or a standard labware enum value.")
 
     # --- Mutator Methods --- #
+
     def set_id(self, id: int) -> None:
         self._id = id
 
     def set_location(self, location: FlexDeckLocations) -> None:
         self._location = location
+
+    def set_display_name(self, display_name: str) -> None:
+        self._display_name = display_name
+
+    def set_load_name(self, load_name: str) -> None:
+        self._load_name = load_name
+
+    def set_name_space(self, name_space: str) -> None:
+        self._name_space = name_space
+
+    def set_version(self, version: int) -> None:
+        self._version = version
+
+    def set_is_tiprack(self, is_tiprack: bool) -> None:
+        self._is_tiprack = is_tiprack
 
     # --- Accessor Methods --- #
 
@@ -137,19 +182,19 @@ class FlexLabware:
         return self._location
 
     def get_display_name(self) -> str:
-        return self.metadata.display_name
+        return self._display_name
 
     def get_load_name(self) -> str:
-        return self.parameters.get_load_name()
+        return self._load_name
 
-    def get_namespace(self) -> str:
-        return self.namespace
+    def get_name_space(self) -> str:
+        return self._name_space
 
     def get_version(self) -> int:
-        return self.version
+        return self._version
 
-    def is_tiprack(self):
-        return self.parameters.is_tiprack
+    def get_is_tiprack(self):
+        return self._is_tiprack
 
     @staticmethod
     def load_json(file_path: str) -> Dict[str, Any]:
