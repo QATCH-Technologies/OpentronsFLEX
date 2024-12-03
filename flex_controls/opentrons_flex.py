@@ -112,11 +112,9 @@ class OpentronsFlex:
             location.value,
             labware_definition,
         )
-        labware = FlexLabware(
-            location=location, labware_definition=labware_definition)
+        labware = FlexLabware(location=location, labware_definition=labware_definition)
         if self.available_labware.get(location) is not None:
-            logging.error(
-                "Labware already loaded at location: %s", location.value)
+            logging.error("Labware already loaded at location: %s", location.value)
             raise Exception(
                 f"Labware {labware.get_display_name()} not available in slot {labware.get_location().value}."
             )
@@ -304,9 +302,11 @@ class OpentronsFlex:
         return response
 
     def run_protocol(self, protocol_name: str) -> str:
-        protocol_id = self.available_protocols.get(protocol_name)
-        if protocol_id is None:
+        protocol = self.available_protocols.get(protocol_name)
+        if protocol is None:
+            logging.error(f"Protocol '{protocol_name}' not available.")
             raise ValueError(f"Protocol '{protocol_name}' not available.")
+        protocol_id = protocol.get("id")
         logging.info(
             f"Setting up '{protocol_name}' protocol for run with ID: {protocol_id}"
         )
@@ -315,9 +315,7 @@ class OpentronsFlex:
                 runs_url=self._get_runs_url(), protocol_id=protocol_id
             )
             response = self.play_run(run_id)
-            logging.info(
-                f"Protocol {protocol_id} running under {run_id}. "
-            )
+            logging.info(f"Protocol {protocol_id} running under {run_id}. ")
             return response
         except Exception as e:
             logging.error(
@@ -326,18 +324,18 @@ class OpentronsFlex:
             raise
 
     def delete_protocol(self, protocol_name: str) -> str:
-        protocol_id = self.available_protocols.get(protocol_name)
-        if protocol_id is None:
+        protocol = self.available_protocols.get(protocol_name)
+        if protocol is None:
+            logging.error(f"Protocol '{protocol_name}' not available.")
             raise ValueError(f"Protocol '{protocol_name}' not available.")
-        logging.info(
-            f"Deleting '{protocol_name}' protocol with ID: {protocol_id}")
+        protocol_id = protocol.get("id")
+        logging.info(f"Deleting '{protocol_name}' protocol with ID: {protocol_id}")
         try:
             response = FlexRuns.delete_protocol(
-                runs_url=self._get_runs_url(), protocol_id=protocol_id
+                protocols_url=self._get_protocols_url(), protocol_id=protocol_id
             )
-            logging.info(
-                f"Protocol {protocol_id} deleted successfully. "
-            )
+            self.update_available_protocols()
+            logging.info(f"Protocol {protocol_id} deleted successfully. ")
             return response
         except Exception as e:
             logging.error(
@@ -348,10 +346,8 @@ class OpentronsFlex:
     def upload_protocol(self, protocol_file_path: str) -> str:
         logging.info(f"Uploading protocol from file: {protocol_file_path}")
         if not os.path.exists(protocol_file_path):
-            logging.error(
-                f"Protocol file path does not exist: {protocol_file_path}")
-            raise Exception(
-                f"Protocol path {protocol_file_path} does not exist")
+            logging.error(f"Protocol file path does not exist: {protocol_file_path}")
+            raise Exception(f"Protocol path {protocol_file_path} does not exist")
 
         try:
             response = FlexRuns.upload_protocol(
@@ -359,8 +355,7 @@ class OpentronsFlex:
                 protocol_file_path=protocol_file_path,
             )
             self.update_available_protocols()
-            logging.info(
-                f"Protocol uploaded successfully. ")
+            logging.info("Protocol uploaded successfully.")
             return response
         except Exception as e:
             logging.error(
@@ -392,9 +387,7 @@ class OpentronsFlex:
                 labware_file_path=custom_labware_file_path,
             )
             self.update_available_protocols()
-            logging.info(
-                f"Protocol uploaded with custom labware successfully. "
-            )
+            logging.info("Protocol uploaded with custom labware successfully.")
             return response
         except Exception as e:
             logging.error(
@@ -409,8 +402,7 @@ class OpentronsFlex:
             response = FlexRuns.get_protocols_list(
                 protocols_url=self._get_protocols_url()
             )
-            logging.info(
-                f"Retrieved protocol list successfully")
+            logging.info(f"Retrieved protocol list successfully")
             return response
         except Exception as e:
             logging.error(f"Failed to fetch protocol list: {e}", exc_info=True)
@@ -421,38 +413,39 @@ class OpentronsFlex:
         self.available_protocols = {}
         all_protocols = self.get_protocol_list()
         for entry in all_protocols:
-            protocol_name = entry['metadata']['protocolName']
-            protocol_id = entry['id']
+            protocol_name = entry["metadata"]["protocolName"]
+            protocol_id = entry["id"]
             created_at = datetime.fromisoformat(
-                entry['createdAt'].replace('Z', '+00:00'))
+                entry["createdAt"].replace("Z", "+00:00")
+            )
 
             # Check if protocol already exists in the dictionary
             if protocol_name not in self.available_protocols:
                 self.available_protocols[protocol_name] = {
-                    'id': protocol_id, 'createdAt': created_at}
+                    "id": protocol_id,
+                    "createdAt": created_at,
+                }
             else:
                 # Compare the dates and store the most recent one
-                if created_at > self.available_protocols[protocol_name]['createdAt']:
+                if created_at > self.available_protocols[protocol_name]["createdAt"]:
                     self.available_protocols[protocol_name] = {
-                        'id': protocol_id, 'createdAt': created_at}
+                        "id": protocol_id,
+                        "createdAt": created_at,
+                    }
 
         # Extract only protocol names and their corresponding IDs
-        result = {name: data['id']
-                  for name, data in self.available_protocols.items()}
+        result = {name: data["id"] for name, data in self.available_protocols.items()}
 
         return result
 
     def delete_run(self, run_id: int) -> str:
         logging.info(f"Deleting run with ID: {run_id}")
         try:
-            response = FlexRuns.delete_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
-            logging.info(
-                f"Run {run_id} deleted successfully. ")
+            response = FlexRuns.delete_run(runs_url=self._get_runs_url(), run_id=run_id)
+            logging.info(f"Run {run_id} deleted successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to delete run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to delete run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def get_run_status(self, run_id: int) -> str:
@@ -461,9 +454,7 @@ class OpentronsFlex:
             response = FlexRuns.get_run_status(
                 runs_url=self._get_runs_url(), run_id=run_id
             )
-            logging.info(
-                f"Status for run {run_id} retrieved successfully. "
-            )
+            logging.info(f"Status for run {run_id} retrieved successfully. ")
             return response
         except Exception as e:
             logging.error(
@@ -475,8 +466,7 @@ class OpentronsFlex:
         logging.info("Fetching run list.")
         try:
             response = FlexRuns.get_runs_list(runs_url=self._get_runs_url())
-            logging.info(
-                f"Run list retrieved successfully. ")
+            logging.info(f"Run list retrieved successfully. ")
             return response
         except Exception as e:
             logging.error(f"Failed to fetch run list: {e}", exc_info=True)
@@ -485,40 +475,31 @@ class OpentronsFlex:
     def pause_run(self, run_id: int) -> str:
         logging.info(f"Pausing run with ID: {run_id}")
         try:
-            response = FlexRuns.pause_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
-            logging.info(
-                f"Run {run_id} paused successfully. ")
+            response = FlexRuns.pause_run(runs_url=self._get_runs_url(), run_id=run_id)
+            logging.info(f"Run {run_id} paused successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to pause run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to pause run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def play_run(self, run_id: int) -> str:
         logging.info(f"Playing run with ID: {run_id}")
         try:
-            response = FlexRuns.play_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
-            logging.info(
-                f"Run {run_id} started successfully. ")
+            response = FlexRuns.play_run(runs_url=self._get_runs_url(), run_id=run_id)
+            logging.info(f"Run {run_id} started successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to play run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to play run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def stop_run(self, run_id: int) -> str:
         logging.info(f"Stopping run with ID: {run_id}")
         try:
-            response = FlexRuns.stop_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
-            logging.info(
-                f"Run {run_id} stopped successfully. ")
+            response = FlexRuns.stop_run(runs_url=self._get_runs_url(), run_id=run_id)
+            logging.info(f"Run {run_id} stopped successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to stop run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to stop run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def lights_on(self) -> str:
@@ -563,8 +544,7 @@ class OpentronsFlex:
         logging.info("Fetching lights status.")
         try:
             response = FlexRuns.get_lights(self._get_lights_url())
-            logging.info(
-                f"Lights status retrieved successfully. ")
+            logging.info(f"Lights status retrieved successfully. ")
             return response
         except Exception as e:
             logging.error("Failed to fetch lights status.", exc_info=True)

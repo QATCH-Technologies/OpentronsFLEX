@@ -42,17 +42,17 @@ class FlexRuns:
                     )
                 response.raise_for_status()  # Raise an exception for HTTP errors
             elif method == "GET":
-                if payload:
-                    json_payload = json.dumps(payload) if payload else None
-                    response = requests.post(
-                        url=url, headers=HEADERS, data=json_payload
-                    )
-                else:
-                    response = requests.get(
-                        url=url,
-                        headers=HEADERS,
-                    )
+                response = requests.get(
+                    url=url,
+                    headers=HEADERS,
+                )
                 response.raise_for_status()  # Raise an exception for HTTP errors
+            elif method == "DELETE":
+                response = requests.delete(
+                    url=url,
+                    headers=HEADERS,
+                )
+                response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
             print(f"Error sending {method} request to {url}: {e}")
