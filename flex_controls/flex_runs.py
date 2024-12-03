@@ -17,11 +17,19 @@ class FlexRuns:
         try:
             if method == "POST":
                 if payload:
-                    if payload.get("files"):
+                    if (isinstance(payload, dict) and "files" in payload) or (
+                        isinstance(payload, list)
+                        and all(
+                            isinstance(item, tuple) and item[0] == "files"
+                            for item in payload
+                        )
+                    ):
+                        # If payload is a dictionary with "files" key or a list of "files" tuples
                         response = requests.post(
                             url=url, headers=HEADERS, files=payload
                         )
                     else:
+                        # If payload is anything else, treat it as JSON payload
                         json_payload = json.dumps(payload) if payload else None
                         response = requests.post(
                             url=url, headers=HEADERS, data=json_payload
@@ -63,8 +71,7 @@ class FlexRuns:
         response_json = FlexRuns._send_request("POST", runs_url, payload)
 
         if response_json:
-            run_id = [key for key in response_json["data"].keys()
-                      if "id" in key]
+            run_id = [key for key in response_json["data"].keys() if "id" in key]
             if run_id:
                 return run_id
             else:
@@ -83,20 +90,25 @@ class FlexRuns:
         data = {"files": protocol_file_payload}
         response = FlexRuns._send_request("POST", protocols_url, data)
         protocol_file_payload.close()
-        return {"protocol_id": response["data"]["id"], "protocol_name": response["data"]["metadata"]["protocolName"]}
+        return {
+            "protocol_id": response["data"]["id"],
+            "protocol_name": response["data"]["metadata"]["protocolName"],
+        }
 
     @staticmethod
-    def upload_protocol_cusom_labware(
+    def upload_protocol_custom_labware(
         protocols_url: str, protocol_file_path: str, labware_file_path: str
     ):
         protocol_file_payload = open(protocol_file_path, "rb")
         labware_file_payload = open(labware_file_path, "rb")
-        data = [("files", protocol_file_payload),
-                ("files", labware_file_payload)]
+        data = [("files", protocol_file_payload), ("files", labware_file_payload)]
         response = FlexRuns._send_request("POST", protocols_url, data)
         protocol_file_payload.close()
         labware_file_payload.close()
-        return response["data"]["id"]
+        return {
+            "protocol_id": response["data"]["id"],
+            "protocol_name": response["data"]["metadata"]["protocolName"],
+        }
 
     @staticmethod
     def delete_run(runs_url: str, run_id: int):
@@ -122,8 +134,7 @@ class FlexRuns:
     @staticmethod
     def pause_run(runs_url: str, run_id: int):
         actions_url = f"{runs_url}/{run_id}/actions"
-        action_payload = json.dumps(
-            {"data": {"actionType": FlexActions.PAUSE}})
+        action_payload = json.dumps({"data": {"actionType": FlexActions.PAUSE}})
         return FlexRuns._send_request("POST", actions_url, action_payload)
 
     @staticmethod
