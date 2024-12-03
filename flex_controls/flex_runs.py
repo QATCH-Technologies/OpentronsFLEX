@@ -14,15 +14,19 @@ class FlexRuns:
         :param payload: Dictionary payload to be sent as JSON.
         :return: Parsed JSON response or None in case of errors.
         """
-        headers = {"Content-Type": "application/json"}
-        headers.update(HEADERS)
         try:
             if method == "POST":
                 if payload:
-                    json_payload = json.dumps(payload) if payload else None
-                    print(f"{method}\n{url},\n{HEADERS},\n{json_payload}\n")
-                    response = requests.post(
-                        url=url, headers=HEADERS, data=json_payload)
+                    if payload.get("file"):
+                        input("uploading protocol")
+                        response = requests.post(
+                            url=url, headers=HEADERS, files=payload
+                        )
+                    else:
+                        json_payload = json.dumps(payload) if payload else None
+                        response = requests.post(
+                            url=url, headers=HEADERS, data=json_payload
+                        )
 
                 else:
                     response = requests.post(
@@ -35,7 +39,8 @@ class FlexRuns:
                 if payload:
                     json_payload = json.dumps(payload) if payload else None
                     response = requests.post(
-                        url=url, headers=HEADERS, data=json_payload)
+                        url=url, headers=HEADERS, data=json_payload
+                    )
                 else:
                     response = requests.post(
                         method=method,
@@ -59,8 +64,7 @@ class FlexRuns:
         response_json = FlexRuns._send_request("POST", runs_url, payload)
 
         if response_json:
-            run_id = [key for key in response_json["data"].keys()
-                      if "id" in key]
+            run_id = [key for key in response_json["data"].keys() if "id" in key]
             if run_id:
                 return run_id
             else:
@@ -87,8 +91,7 @@ class FlexRuns:
     ):
         protocol_file_payload = open(protocol_file_path, "rb")
         labware_file_payload = open(labware_file_path, "rb")
-        data = [("files", protocol_file_payload),
-                ("files", labware_file_payload)]
+        data = [("files", protocol_file_payload), ("files", labware_file_payload)]
         response = FlexRuns._send_request("POST", protocols_url, data)
         protocol_file_payload.close()
         labware_file_payload.close()
@@ -118,8 +121,7 @@ class FlexRuns:
     @staticmethod
     def pause_run(runs_url: str, run_id: int):
         actions_url = f"{runs_url}/{run_id}/actions"
-        action_payload = json.dumps(
-            {"data": {"actionType": FlexActions.PAUSE}})
+        action_payload = json.dumps({"data": {"actionType": FlexActions.PAUSE}})
         return FlexRuns._send_request("POST", actions_url, action_payload)
 
     @staticmethod
