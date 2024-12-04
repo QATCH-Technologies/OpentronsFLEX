@@ -18,11 +18,8 @@ from typing import Union
 import time
 from datetime import datetime
 import subprocess
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(filename)s - %(message)s",
-)
+from ip_scanner import IPScanner
+import asyncio
 
 
 class OpentronsFlex:
@@ -55,11 +52,6 @@ class OpentronsFlex:
         Returns:
             None
         """
-        logging.info(
-            "Initializing OpentronsFlex with MAC: %s and IP: %s",
-            mac_address,
-            ip_address,
-        )
         self._set_robot_mac_address(mac_address)
 
         self._setup(ip=ip_address)
@@ -78,14 +70,21 @@ class OpentronsFlex:
         Returns:
             None
         """
-        logging.info("Setting up the robot with IP: %s", ip)
         self.available_protocols = {}
         self.gantry = {
             FlexMountPositions.LEFT_MOUNT: None,
             FlexMountPositions.RIGHT_MOUNT: None,
         }
 
+        if ip is None:
+            ip = self.find_ip()
+
         self._set_robot_ipv4(ip)
+        logging.info(
+            "Initializing OpentronsFlex with MAC: %s and IP: %s",
+            self._get_robot_mac_address(),
+            self._get_robot_ipv4(),
+        )
         self._set_base_url(f"http://{self._get_robot_ipv4()}:{ROBOT_PORT}")
         self._set_runs_url(f"{self._get_base_url()}/runs")
         self._set_protocols_url(f"{self._get_base_url()}/protocols")
@@ -1125,6 +1124,13 @@ class OpentronsFlex:
             logging.error("Validation failed.", exc_info=True)
             raise
 
+    def find_ip(self) -> str:
+        scanner = IPScanner(mac_address=self._get_robot_mac_address())
+
+        # Perform the network scan asynchronously
+        asyncio.run(scanner.scan_network())
+        return scanner.get_ip_from_mac()
+
     # --- ACCESSOR METHODS --- #
     def _set_runs_url(self, runs_url: str) -> None:
         self._runs_url = runs_url
@@ -1148,10 +1154,10 @@ class OpentronsFlex:
         self._run_id = run_id
 
     def _set_robot_ipv4(self, ipv4: str) -> None:
-        ipv4_regex = r"^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[1-9]?[0-9])$"
-        if not re.match(ipv4_regex, ipv4):
-            logging.error(f"Invalid IPv4 address: {ipv4}", exc_info=True)
-            raise ValueError(f"Invalid IPv4 address: {ipv4}")
+        # ipv4_regex = r"^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|[1-9]?[0-9])$"
+        # if not re.match(ipv4_regex, ipv4):
+        #     logging.error(f"Invalid IPv4 address: {ipv4}", exc_info=True)
+        #     raise ValueError(f"Invalid IPv4 address: {ipv4}")
 
         # Attempt to ping the IP address to check if it is reachable
         try:
