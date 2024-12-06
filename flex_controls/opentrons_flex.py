@@ -18,8 +18,8 @@ from typing import Union
 import time
 from datetime import datetime
 import subprocess
-from ip_scanner import IPScanner
-import asyncio
+import psutil
+import socket
 
 
 class OpentronsFlex:
@@ -161,13 +161,13 @@ class OpentronsFlex:
         """
         Loads labware into a specified location on the Opentrons Flex robot.
 
-        This method checks if a labware is already present at the specified location. If not, it 
-        loads the labware based on the provided definition and updates the robot's configuration. 
+        This method checks if a labware is already present at the specified location. If not, it
+        loads the labware based on the provided definition and updates the robot's configuration.
         The unique ID of the loaded labware is then retrieved and assigned.
 
         Args:
             location (FlexDeckLocations): The location on the deck where the labware will be loaded.
-            labware_definition (Union[str, StandardLabware]): The labware definition, either as a 
+            labware_definition (Union[str, StandardLabware]): The labware definition, either as a
                 string (name) or as a `StandardLabware` object, that describes the labware to be loaded.
 
         Raises:
@@ -181,11 +181,9 @@ class OpentronsFlex:
             location.value,
             labware_definition,
         )
-        labware = FlexLabware(
-            location=location, labware_definition=labware_definition)
+        labware = FlexLabware(location=location, labware_definition=labware_definition)
         if self.available_labware.get(location) is not None:
-            logging.error(
-                "Labware already loaded at location: %s", location.value)
+            logging.error("Labware already loaded at location: %s", location.value)
             raise Exception(
                 f"Labware {labware.get_display_name()} not available in slot {labware.get_location().value}."
             )
@@ -207,12 +205,12 @@ class OpentronsFlex:
         """
         Picks up a tip from a specified labware using the given pipette.
 
-        This method validates that the labware is a tip rack before proceeding. It then sends a 
-        command to the robot to pick up a tip from the labware with the provided pipette. If the 
+        This method validates that the labware is a tip rack before proceeding. It then sends a
+        command to the robot to pick up a tip from the labware with the provided pipette. If the
         labware is not a tip rack, an exception is raised.
 
         Args:
-            labware (FlexLabware): The labware object representing the tip rack from which a tip 
+            labware (FlexLabware): The labware object representing the tip rack from which a tip
                 will be picked up.
             pipette (FlexPipette): The pipette object that will pick up the tip from the labware.
 
@@ -220,7 +218,7 @@ class OpentronsFlex:
             Exception: If the labware is not a tip rack, an exception is raised.
 
         Returns:
-            str: The response from the robot after attempting to pick up the tip, typically a 
+            str: The response from the robot after attempting to pick up the tip, typically a
                 success message or status.
         """
         logging.info(
@@ -254,8 +252,8 @@ class OpentronsFlex:
         """
         Aspirates a specified volume of liquid from labware using the provided pipette and flow rate.
 
-        This method logs the aspirate operation details, validates the configuration, and then sends 
-        a command to the robot to aspirate the specified volume from the labware using the pipette. 
+        This method logs the aspirate operation details, validates the configuration, and then sends
+        a command to the robot to aspirate the specified volume from the labware using the pipette.
         The robot's response is returned after the operation is performed.
 
         Args:
@@ -265,7 +263,7 @@ class OpentronsFlex:
             volume (float): The volume (µL) of liquid to aspirate.
 
         Returns:
-            str: The response from the robot after performing the aspiration, typically indicating 
+            str: The response from the robot after performing the aspiration, typically indicating
                 success or providing additional status information.
 
         Raises:
@@ -319,8 +317,8 @@ class OpentronsFlex:
         """
         Dispenses a specified volume of liquid into labware using the provided pipette and flow rate.
 
-        This method logs the dispense operation details, validates the configuration, and then sends 
-        a command to the robot to dispense the specified volume into the labware using the pipette. 
+        This method logs the dispense operation details, validates the configuration, and then sends
+        a command to the robot to dispense the specified volume into the labware using the pipette.
         The robot's response is returned after the operation is performed.
 
         Args:
@@ -330,7 +328,7 @@ class OpentronsFlex:
             volume (float): The volume (µL) of liquid to dispense.
 
         Returns:
-            str: The response from the robot after performing the dispense, typically indicating 
+            str: The response from the robot after performing the dispense, typically indicating
                 success or providing additional status information.
 
         Raises:
@@ -356,9 +354,9 @@ class OpentronsFlex:
         """
         Drops the tip from the specified pipette at the given labware location.
 
-        This method logs the tip drop operation, validates the configuration of the 
-        pipette and labware, and sends a command to the robot to drop the pipette tip 
-        at the specified labware location. The robot's response is returned after the 
+        This method logs the tip drop operation, validates the configuration of the
+        pipette and labware, and sends a command to the robot to drop the pipette tip
+        at the specified labware location. The robot's response is returned after the
         operation is performed.
 
         Args:
@@ -366,7 +364,7 @@ class OpentronsFlex:
             pipette (FlexPipette): The pipette object that will drop the tip.
 
         Returns:
-            str: The response from the robot after performing the tip drop, typically indicating 
+            str: The response from the robot after performing the tip drop, typically indicating
                 success or providing additional status information.
 
         Raises:
@@ -397,9 +395,9 @@ class OpentronsFlex:
         """
         Moves the specified pipette to the given (X, Y, Z) coordinates with optional Z height limitation.
 
-        This method logs the movement request, validates the configuration of the pipette, 
-        and sends a command to the robot to move the pipette to the specified coordinates. 
-        The movement is constrained by a minimum Z height and can be forced to proceed 
+        This method logs the movement request, validates the configuration of the pipette,
+        and sends a command to the robot to move the pipette to the specified coordinates.
+        The movement is constrained by a minimum Z height and can be forced to proceed
         directly if specified. The response from the robot after the movement is performed is returned.
 
         Args:
@@ -408,11 +406,11 @@ class OpentronsFlex:
             y (float): The target Y-coordinate for the pipette's movement.
             z (float): The target Z-coordinate for the pipette's movement.
             min_z_height (float): The minimum Z height constraint for the movement.
-            force_direct (bool): If True, the movement will be forced directly to the coordinates, 
+            force_direct (bool): If True, the movement will be forced directly to the coordinates,
                                 bypassing any additional checks or adjustments.
 
         Returns:
-            str: The response from the robot after the movement, typically indicating 
+            str: The response from the robot after the movement, typically indicating
                 success or additional status information.
 
         Raises:
@@ -446,8 +444,8 @@ class OpentronsFlex:
         """
         Moves the specified pipette to a specific well in the given labware.
 
-        This method logs the movement request, validates the configuration of the labware 
-        and pipette, and sends a command to the robot to move the pipette to the specified 
+        This method logs the movement request, validates the configuration of the labware
+        and pipette, and sends a command to the robot to move the pipette to the specified
         well within the labware. The response from the robot after the movement is performed is returned.
 
         Args:
@@ -478,8 +476,8 @@ class OpentronsFlex:
         """
         Moves the specified pipette a relative distance along a specified axis.
 
-        This method logs the request for the relative movement, validates the pipette's configuration, 
-        and sends a command to the robot to move the pipette along the specified axis by the given distance. 
+        This method logs the request for the relative movement, validates the pipette's configuration,
+        and sends a command to the robot to move the pipette along the specified axis by the given distance.
         The response from the robot after the movement is performed is returned.
 
         Args:
@@ -513,9 +511,9 @@ class OpentronsFlex:
         """
         Runs a protocol by its name.
 
-        This method checks if the specified protocol is available, retrieves its ID, 
-        and initiates the protocol run. If successful, the method logs the run's details 
-        and returns the response from the run. If an error occurs, it logs the error 
+        This method checks if the specified protocol is available, retrieves its ID,
+        and initiates the protocol run. If successful, the method logs the run's details
+        and returns the response from the run. If an error occurs, it logs the error
         and raises an exception.
 
         Args:
@@ -555,7 +553,7 @@ class OpentronsFlex:
 
         This method looks for the protocol in the available protocols list, and if found,
         it deletes the protocol using its ID by calling the `FlexRuns.delete_protocol` method.
-        If the protocol is not found, it raises a `ValueError`. It also logs the success or failure 
+        If the protocol is not found, it raises a `ValueError`. It also logs the success or failure
         of the deletion process.
 
         Args:
@@ -573,8 +571,7 @@ class OpentronsFlex:
             logging.error(f"Protocol '{protocol_name}' not available.")
             raise ValueError(f"Protocol '{protocol_name}' not available.")
         protocol_id = protocol.get("id")
-        logging.info(
-            f"Deleting '{protocol_name}' protocol with ID: {protocol_id}")
+        logging.info(f"Deleting '{protocol_name}' protocol with ID: {protocol_id}")
         try:
             response = FlexRuns.delete_protocol(
                 protocols_url=self._get_protocols_url(), protocol_id=protocol_id
@@ -592,9 +589,9 @@ class OpentronsFlex:
         """
         Deletes a protocol by its name.
 
-        This method checks if the specified protocol is available, retrieves its ID, 
-        and deletes it. If the deletion is successful, the available protocols are updated 
-        and the method returns the response from the deletion. If an error occurs, 
+        This method checks if the specified protocol is available, retrieves its ID,
+        and deletes it. If the deletion is successful, the available protocols are updated
+        and the method returns the response from the deletion. If an error occurs,
         it logs the error and raises an exception.
 
         Args:
@@ -609,10 +606,8 @@ class OpentronsFlex:
         """
         logging.info(f"Uploading protocol from file: {protocol_file_path}")
         if not os.path.exists(protocol_file_path):
-            logging.error(
-                f"Protocol file path does not exist: {protocol_file_path}")
-            raise Exception(
-                f"Protocol path {protocol_file_path} does not exist")
+            logging.error(f"Protocol file path does not exist: {protocol_file_path}")
+            raise Exception(f"Protocol path {protocol_file_path} does not exist")
 
         try:
             response = FlexRuns.upload_protocol(
@@ -635,9 +630,9 @@ class OpentronsFlex:
         """
         Uploads a protocol file with custom labware files.
 
-        This method checks if the provided protocol file and all custom labware files exist. 
-        If they exist, the protocol and labware files are uploaded. After the upload, 
-        the available protocols are updated. If any file does not exist or if the upload fails, 
+        This method checks if the provided protocol file and all custom labware files exist.
+        If they exist, the protocol and labware files are uploaded. After the upload,
+        the available protocols are updated. If any file does not exist or if the upload fails,
         an error is logged and an exception is raised.
 
         Args:
@@ -656,24 +651,23 @@ class OpentronsFlex:
 
         # Check if protocol file and all custom labware files exist
         if not os.path.exists(protocol_file_path):
-            logging.error(
-                f"Protocol file path does not exist: {protocol_file_path}")
-            raise Exception(
-                f"Protocol file path does not exist: {protocol_file_path}")
+            logging.error(f"Protocol file path does not exist: {protocol_file_path}")
+            raise Exception(f"Protocol file path does not exist: {protocol_file_path}")
 
         for labware_file_path in custom_labware_file_paths:
             if not os.path.exists(labware_file_path):
                 logging.error(
-                    f"Custom labware file path does not exist: {labware_file_path}")
+                    f"Custom labware file path does not exist: {labware_file_path}"
+                )
                 raise Exception(
-                    f"Custom labware file path does not exist: {labware_file_path}")
+                    f"Custom labware file path does not exist: {labware_file_path}"
+                )
 
         try:
             response = FlexRuns.upload_protocol_custom_labware(
                 protocols_url=self._get_protocols_url(),
                 protocol_file_path=protocol_file_path,
-                labware_file_paths=list(
-                    custom_labware_file_paths),  # Updated parameter
+                labware_file_paths=list(custom_labware_file_paths),  # Updated parameter
             )
             self.update_available_protocols()
             logging.info("Protocol uploaded with custom labware successfully.")
@@ -752,8 +746,7 @@ class OpentronsFlex:
                     }
 
         # Extract only protocol names and their corresponding IDs
-        result = {name: data["id"]
-                  for name, data in self.available_protocols.items()}
+        result = {name: data["id"] for name, data in self.available_protocols.items()}
 
         return result
 
@@ -761,7 +754,7 @@ class OpentronsFlex:
         """
         Deletes a specific run based on the provided run ID.
 
-        This method attempts to delete a run using the provided `run_id`. It communicates with 
+        This method attempts to delete a run using the provided `run_id`. It communicates with
         the FlexRuns service to delete the run and logs the result. If the deletion is successful,
         it returns the response from the service.
 
@@ -776,21 +769,19 @@ class OpentronsFlex:
         """
         logging.info(f"Deleting run with ID: {run_id}")
         try:
-            response = FlexRuns.delete_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.delete_run(runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} deleted successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to delete run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to delete run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def get_run_status(self, run_id: int) -> str:
         """
         Retrieves the status of a specific run based on the provided run ID.
 
-        This method communicates with the FlexRuns service to fetch the current status 
-        of a run using the `run_id`. If successful, it logs and returns the response 
+        This method communicates with the FlexRuns service to fetch the current status
+        of a run using the `run_id`. If successful, it logs and returns the response
         containing the status. If an error occurs, it logs the error and raises an exception.
 
         Args:
@@ -819,8 +810,8 @@ class OpentronsFlex:
         """
         Retrieves the list of all runs from the FlexRuns service.
 
-        This method communicates with the FlexRuns service to fetch the list of all 
-        available runs. If successful, it logs and returns the response containing 
+        This method communicates with the FlexRuns service to fetch the list of all
+        available runs. If successful, it logs and returns the response containing
         the list of runs. If an error occurs, it logs the error and raises an exception.
 
         Returns:
@@ -857,13 +848,11 @@ class OpentronsFlex:
         """
         logging.info(f"Pausing run with ID: {run_id}")
         try:
-            response = FlexRuns.pause_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.pause_run(runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} paused successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to pause run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to pause run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def play_run(self, run_id: int) -> str:
@@ -885,13 +874,11 @@ class OpentronsFlex:
         """
         logging.info(f"Playing run with ID: {run_id}")
         try:
-            response = FlexRuns.play_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.play_run(runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} started successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to play run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to play run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def stop_run(self, run_id: str) -> str:
@@ -913,20 +900,18 @@ class OpentronsFlex:
         """
         logging.info(f"Stopping run with ID: {run_id}")
         try:
-            response = FlexRuns.stop_run(
-                runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.stop_run(runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} stopped successfully. ")
             return response
         except Exception as e:
-            logging.error(
-                f"Failed to stop run with ID {run_id}: {e}", exc_info=True)
+            logging.error(f"Failed to stop run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def lights_on(self) -> str:
         """
         Turns the lights on.
 
-        This method sends a command to turn the lights on by interacting with the 
+        This method sends a command to turn the lights on by interacting with the
         FlexLights service. If successful, it logs the success and returns the response.
         If an error occurs, it logs the error and raises an exception.
 
@@ -952,7 +937,7 @@ class OpentronsFlex:
         """
         Turns the lights off.
 
-        This method sends a command to turn the lights off by interacting with the 
+        This method sends a command to turn the lights off by interacting with the
         FlexLights service. If successful, it logs the success and returns the response.
         If an error occurs, it logs the error and raises an exception.
 
@@ -978,9 +963,9 @@ class OpentronsFlex:
         """
         Flashes the lights a specified number of times.
 
-        This method flashes the lights by turning them on and off with a 0.5-second 
-        delay between each toggle. The lights will flash the number of times 
-        specified by the `number_of_times` parameter. If an error occurs, it logs the 
+        This method flashes the lights by turning them on and off with a 0.5-second
+        delay between each toggle. The lights will flash the number of times
+        specified by the `number_of_times` parameter. If an error occurs, it logs the
         error and raises an exception.
 
         Args:
@@ -995,8 +980,8 @@ class OpentronsFlex:
             Exception: If the flashing sequence fails due to an error in turning the lights on or off.
         """
         if number_of_times < 1:
-            logging.error(f'Cannot flash lights {number_of_times}.')
-            raise ValueError(f'Cannot flash lights {number_of_times}.')
+            logging.error(f"Cannot flash lights {number_of_times}.")
+            raise ValueError(f"Cannot flash lights {number_of_times}.")
         logging.info(f"Flashing lights {number_of_times} times.")
         try:
             for _ in range(number_of_times):
@@ -1124,12 +1109,34 @@ class OpentronsFlex:
             logging.error("Validation failed.", exc_info=True)
             raise
 
-    def find_ip(self) -> str:
-        scanner = IPScanner(mac_address=self._get_robot_mac_address())
+    def find_ip(self):
+        # Get the device's IP address
+        hostname = socket.gethostname()
+        ip_address = socket.gethostbyname(hostname)
 
-        # Perform the network scan asynchronously
-        asyncio.run(scanner.scan_network())
-        return scanner.get_ip_from_mac()
+        # Retrieve the network interfaces and their details using psutil
+        interfaces = psutil.net_if_addrs()
+
+        # Iterate over all interfaces to find the MAC address for the Ethernet interface
+        mac_address = None
+        for interface, addrs in interfaces.items():
+            for addr in addrs:
+                print(addr)
+                if addr.family == psutil.AF_LINK:  # This checks for MAC address
+                    if (
+                        "eth" in interface
+                    ):  # You can adjust this condition for your interface name
+                        print(mac_address)
+                        break
+            if mac_address:
+                break
+
+        # Assert that the MAC address matches the expected one
+        assert (
+            mac_address and mac_address.lower() == self._get_robot_mac_address().lower()
+        ), f"MAC address mismatch! Expected: {self._get_robot_mac_address()}, Found: {mac_address}"
+
+        return ip_address
 
     # --- ACCESSOR METHODS --- #
     def _set_runs_url(self, runs_url: str) -> None:
@@ -1166,15 +1173,16 @@ class OpentronsFlex:
                 ["ping", "-n", "1", ipv4],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True
+                text=True,
             )
             if result.returncode != 0:
                 logging.error(f"Cannot communicate with IP address: {ipv4}")
-                raise ConnectionError(
-                    f"Cannot communicate with IP address: {ipv4}")
+                raise ConnectionError(f"Cannot communicate with IP address: {ipv4}")
         except Exception as e:
             logging.error(
-                f"Error during communication check for IP address {ipv4}: {e}", exc_info=True)
+                f"Error during communication check for IP address {ipv4}: {e}",
+                exc_info=True,
+            )
             raise
 
         self._robot_ipv4 = ipv4
