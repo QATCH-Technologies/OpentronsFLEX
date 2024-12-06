@@ -27,7 +27,6 @@ def find_ip_by_mac(mac_address):
         entries.append(parts)
 
     for entry in entries:
-        input(entry)
         if str(entry[1]).lower() == mac_address.lower():
             return entry[0]
 
