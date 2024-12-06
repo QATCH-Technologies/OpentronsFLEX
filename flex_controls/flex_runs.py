@@ -20,8 +20,8 @@ class FlexRuns:
     - Fetching status and light control for Flex systems.
     - Sending homing commands to the Flex robot.
 
-    Each method uses the `_send_request` utility to make HTTP requests (GET, POST, DELETE) to the Flex API and handles 
-    responses accordingly. Methods are designed to be flexible and provide easy access to different types of Flex operations 
+    Each method uses the `_send_request` utility to make HTTP requests (GET, POST, DELETE) to the Flex API and handles
+    responses accordingly. Methods are designed to be flexible and provide easy access to different types of Flex operations
     based on the given URLs and parameters.
 
     Methods:
@@ -43,6 +43,7 @@ class FlexRuns:
 
     This class allows users to easily control and monitor their Opentrons Flex by encapsulating the interactions with the API.
     """
+
     @staticmethod
     def _send_request(method: str, url: str, payload: dict = None) -> Union[dict, None]:
         """
@@ -78,7 +79,8 @@ class FlexRuns:
                     if isinstance(payload, dict) and "files" in payload:
                         request_kwargs["files"] = payload
                     elif isinstance(payload, list) and all(
-                        isinstance(item, tuple) and item[0] == "files" for item in payload
+                        isinstance(item, tuple) and item[0] == "files"
+                        for item in payload
                     ):
                         request_kwargs["files"] = payload
                     else:
@@ -177,7 +179,8 @@ class FlexRuns:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
         logging.info(
-            f"POST: uploading protocol file from path {protocol_file_path} to {protocols_url}")
+            f"POST: uploading protocol file from path {protocol_file_path} to {protocols_url}"
+        )
         protocol_file_payload = open(protocol_file_path, "rb")
         data = {"files": protocol_file_payload}
         response = FlexRuns._send_request("POST", protocols_url, data)
@@ -219,7 +222,8 @@ class FlexRuns:
             Ensures that all opened file handles are properly closed, even in the event of an error.
         """
         logging.info(
-            f"POST: uploading custom labware protocol file from path {protocol_file_path} and {labware_file_path} to {protocols_url}")
+            f"POST: uploading custom labware protocol file from path {protocol_file_path} and {labware_file_paths} to {protocols_url}"
+        )
         protocol_file_payload = open(protocol_file_path, "rb")
         data = [("files", protocol_file_payload)]
 
@@ -245,7 +249,7 @@ class FlexRuns:
         """
         Deletes a specific run by sending a DELETE request to the specified runs URL.
 
-        Constructs a URL by appending the `run_id` to the `runs_url` and sends a DELETE 
+        Constructs a URL by appending the `run_id` to the `runs_url` and sends a DELETE
         request to remove the specified run.
 
         Args:
@@ -262,8 +266,7 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"DELETE: removing run from {runs_url} with ID {run_id}")
+        logging.info(f"DELETE: removing run from {runs_url} with ID {run_id}")
         delete_run_url = f"{runs_url}/{run_id}"
         return FlexRuns._send_request("DELETE", delete_run_url)
 
@@ -272,7 +275,7 @@ class FlexRuns:
         """
         Retrieves the list of protocols from the specified URL.
 
-        Sends a GET request to the provided `protocols_url` and parses the response to 
+        Sends a GET request to the provided `protocols_url` and parses the response to
         extract the list of protocols.
 
         Args:
@@ -288,8 +291,7 @@ class FlexRuns:
             KeyError: If the response does not contain the expected "data" field.
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"GET: fetching protocols list from {protocols_url}")
+        logging.info(f"GET: fetching protocols list from {protocols_url}")
         response = FlexRuns._send_request("GET", protocols_url)
         return [protocol for protocol in response["data"]]
 
@@ -298,7 +300,7 @@ class FlexRuns:
         """
         Retrieves the status of a specific run by sending a GET request to the specified URL.
 
-        Constructs a URL by appending the `run_id` to the `runs_url` and sends a GET 
+        Constructs a URL by appending the `run_id` to the `runs_url` and sends a GET
         request to fetch the status of the specified run.
 
         Args:
@@ -314,8 +316,7 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"GET: fetching run status from {runs_url} with ID {run_id}")
+        logging.info(f"GET: fetching run status from {runs_url} with ID {run_id}")
         status_url = f"{runs_url}/{run_id}"
         return FlexRuns._send_request("GET", status_url)
 
@@ -324,7 +325,7 @@ class FlexRuns:
         """
         Retrieves the list of runs from the specified URL.
 
-        Sends a GET request to the provided `runs_url` and parses the response to extract 
+        Sends a GET request to the provided `runs_url` and parses the response to extract
         the list of runs.
 
         Args:
@@ -340,8 +341,7 @@ class FlexRuns:
             KeyError: If the response does not contain the expected "data" field.
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"GET: fetching run list from {runs_url}")
+        logging.info(f"GET: fetching run list from {runs_url}")
         response = FlexRuns._send_request("GET", runs_url)
         return [run for run in response["data"]]
 
@@ -350,7 +350,7 @@ class FlexRuns:
         """
         Pauses a specific run by sending a POST request to the specified URL.
 
-        Constructs an action URL by appending the `run_id` to the `runs_url` and sends a 
+        Constructs an action URL by appending the `run_id` to the `runs_url` and sends a
         POST request to trigger the pause action for the specified run.
 
         Args:
@@ -366,8 +366,7 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"POST: pausing run from {runs_url} with ID {run_id}")
+        logging.info(f"POST: pausing run from {runs_url} with ID {run_id}")
         actions_url = f"{runs_url}/{run_id}/actions"
         action_payload = {"data": {"actionType": FlexActions.PAUSE.value}}
         return FlexRuns._send_request("POST", actions_url, action_payload)
@@ -377,7 +376,7 @@ class FlexRuns:
         """
         Resumes a specific run by sending a POST request to the specified URL.
 
-        Constructs an action URL by appending the `run_id` to the `runs_url` and sends a 
+        Constructs an action URL by appending the `run_id` to the `runs_url` and sends a
         POST request to trigger the play (resume) action for the specified run.
 
         Args:
@@ -393,8 +392,7 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"POST: playing run from {runs_url} with ID {run_id}")
+        logging.info(f"POST: playing run from {runs_url} with ID {run_id}")
         actions_url = f"{runs_url}/{run_id}/actions"
         action_payload = {"data": {"actionType": FlexActions.PLAY.value}}
         return FlexRuns._send_request("POST", actions_url, action_payload)
@@ -404,7 +402,7 @@ class FlexRuns:
         """
         Stops a specific run by sending a POST request to the specified URL.
 
-        Constructs an action URL by appending the `run_id` to the `runs_url` and sends a 
+        Constructs an action URL by appending the `run_id` to the `runs_url` and sends a
         POST request to trigger the stop action for the specified run.
 
         Args:
@@ -420,8 +418,7 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"POST: stopping run from {runs_url} with ID {run_id}")
+        logging.info(f"POST: stopping run from {runs_url} with ID {run_id}")
         actions_url = f"{runs_url}/{run_id}/actions"
         action_payload = {"data": {"actionType": FlexActions.STOP.value}}
         return FlexRuns._send_request("POST", actions_url, action_payload)
@@ -431,7 +428,7 @@ class FlexRuns:
         """
         Sets the status of the lights by sending a POST request to the specified URL.
 
-        Sends a POST request to the `lights_url` with the specified `light_status` to 
+        Sends a POST request to the `lights_url` with the specified `light_status` to
         control the state of the lights (e.g., ON, OFF).
 
         Args:
@@ -447,8 +444,7 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"POST: setting lights to {light_status} at {lights_url}")
+        logging.info(f"POST: setting lights to {light_status} at {lights_url}")
         return FlexRuns._send_request("POST", lights_url, light_status)
 
     @staticmethod
@@ -470,8 +466,7 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"GET: fetching light status from {lights_url}")
+        logging.info(f"GET: fetching light status from {lights_url}")
         return FlexRuns._send_request(method="GET", url=lights_url)
 
     @staticmethod
@@ -493,8 +488,9 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(
-            f"POST: homing Flex at {home_url}")
+        logging.info(f"POST: homing Flex at {home_url}")
         command_dict = {"target": "robot"}
         command_payload = json.dumps(command_dict)
-        return FlexRuns._send_request(method="POST", url=home_url, payload=command_payload)
+        return FlexRuns._send_request(
+            method="POST", url=home_url, payload=command_payload
+        )
