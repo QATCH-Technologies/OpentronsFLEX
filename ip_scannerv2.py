@@ -1,55 +1,61 @@
-from scapy.all import ARP, Ether, srp
 import socket
-from concurrent.futures import ThreadPoolExecutor
+import struct
 
 
-def get_local_ip():
-    """Get local machine's IP address."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # Connect to a remote server to get the local IP
-    s.connect(('8.8.8.8', 80))
-    ip = s.getsockname()[0]
-    s.close()
-    return ip
+def get_broadcast_address(ip, subnet_mask):
+    """
+    Calculate the broadcast address based on the IP and subnet mask.
+    :param ip: The client's IP address as a string.
+    :param subnet_mask: The subnet mask as a string.
+    :return: The broadcast address as a string.
+    """
+    ip_bytes = struct.unpack('!I', socket.inet_aton(ip))[0]
+    mask_bytes = struct.unpack('!I', socket.inet_aton(subnet_mask))[0]
+    broadcast_bytes = ip_bytes | ~mask_bytes
+    broadcast_address = socket.inet_ntoa(struct.pack('!I', broadcast_bytes))
+    return broadcast_address
 
 
-def send_arp_request(ip):
-    """Send an ARP request to a single IP address."""
-    arp_request = ARP(pdst=ip)
-    broadcast = Ether(dst="ff:ff:ff:ff:ff:ff")
-    arp_request_broadcast = broadcast / arp_request
-    answered_list = srp(arp_request_broadcast, timeout=1, verbose=False)[0]
-    # Return the active IP if response received
-    return answered_list[0][1].psrc if answered_list else None
+def broadcast_mac_address(server_mac, port=12345):
+    """
+    Broadcasts the server's MAC address to the calculated broadcast address.
+
+    :param server_mac: The server's MAC address to be broadcast.
+    :param port: The port number to use for broadcasting (default is 12345).
+    """
+    # Get the client's IP and subnet mask
+    hostname = socket.gethostname()
+    client_ip = socket.gethostbyname(hostname)
+    # Replace with actual subnet mask if dynamic retrieval is needed
+    subnet_mask = '255.255.0.0'
+
+    broadcast_ip = get_broadcast_address(client_ip, subnet_mask)
+    print(f"Broadcasting to {broadcast_ip}")
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    try:
+        message = f"MAC:{server_mac}"
+        client_socket.sendto(message.encode(), (broadcast_ip, port))
+        print(f"Broadcasted MAC address: {server_mac}")
+
+        # Wait for the server's response
+        client_socket.settimeout(5)  # Timeout for server's response
+        while True:
+            try:
+                data, server = client_socket.recvfrom(1024)
+                print(
+                    f"Received response from server {server}: {data.decode()}")
+                break
+            except socket.timeout:
+                print("No response received. Retrying...")
+                client_socket.sendto(message.encode(), (broadcast_ip, port))
+    finally:
+        client_socket.close()
 
 
-def get_active_ips(network):
-    """Get active IP addresses on the network using ARP."""
-    active_ips = []
-
-    # Create a list of IP addresses in the network
-    ip_list = [
-        f"{network.split('/')[0].rsplit('.', 1)[0]}.{i}" for i in range(1, 65535)]
-
-    # Use ThreadPoolExecutor to send ARP requests in parallel
-    with ThreadPoolExecutor(max_workers=100) as executor:
-        results = executor.map(send_arp_request, ip_list)
-
-    # Filter out None values (inactive IPs)
-    active_ips = [ip for ip in results if ip]
-
-    return active_ips
-
-
-# Get local IP address and the network
-local_ip = get_local_ip()
-print(f"Local IP Address: {local_ip}")
-
-# Assuming the subnet is a /16 (255.255.0.0)
-subnet = '.'.join(local_ip.split('.')[:2]) + '.0.0/16'
-
-# Get active IP addresses on the network
-active_ips = get_active_ips(subnet)
-print("Active IPs on the local network:")
-for ip in active_ips:
-    print(ip)
+if __name__ == "__main__":
+    # Replace this with the actual MAC address of the server you want to contact
+    server_mac = "00:11:22:33:44:55"
+    broadcast_mac_address(server_mac)
