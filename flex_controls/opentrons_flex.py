@@ -5,7 +5,7 @@ from flex_constants import (
     FlexDeckLocations,
     FlexAxis,
     FlexLights,
-    ROBOT_PORT,
+    HTTP_PORT,
 )
 from flex_commands import FlexCommands
 from flex_runs import FlexRuns
@@ -18,6 +18,10 @@ from typing import Union
 import time
 from datetime import datetime
 import subprocess
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(filename)s - %(message)s",
+)
 
 
 class OpentronsFlex:
@@ -68,6 +72,8 @@ class OpentronsFlex:
         Returns:
             None
         """
+        logging.info("Initializing OpentronsFlex with MAC: %s",
+                     self._get_robot_mac_address())
         self.available_protocols = {}
         self.gantry = {
             FlexMountPositions.LEFT_MOUNT: None,
@@ -79,11 +85,8 @@ class OpentronsFlex:
 
         self._set_robot_ipv4(ip)
         logging.info(
-            "Initializing OpentronsFlex with MAC: %s and IP: %s",
-            self._get_robot_mac_address(),
-            self._get_robot_ipv4(),
-        )
-        self._set_base_url(f"http://{self._get_robot_ipv4()}:{ROBOT_PORT}")
+            f"Running flex at IPv4: {self._get_robot_ipv4()}:{HTTP_PORT}")
+        self._set_base_url(f"http://{self._get_robot_ipv4()}:{HTTP_PORT}")
         self._set_runs_url(f"{self._get_base_url()}/runs")
         self._set_protocols_url(f"{self._get_base_url()}/protocols")
         self.update_available_protocols()
@@ -1216,7 +1219,7 @@ class OpentronsFlex:
             logging.error(f"Invalid MAC address: {mac_address}", exc_info=True)
             raise ValueError(f"Invalid MAC address: {mac_address}")
 
-        self._robot_mac_address = mac_address
+        self._robot_mac_address = mac_address.replace(":", "-")
 
     def _set_left_pipette(self, pipette: FlexPipette) -> None:
         current_pipette = self.gantry.get(FlexMountPositions.LEFT_MOUNT)

@@ -2,8 +2,9 @@ from enum import Enum
 import json
 
 ROBOT_IP = "172.28.24.236"
-ROBOT_PORT = "31950"
+HTTP_PORT = "31950"
 HEADERS = {"opentrons-version": "3"}
+CONFIG_FILE = "device_config.json"
 
 
 class FlexAxis(Enum):
