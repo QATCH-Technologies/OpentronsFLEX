@@ -32,7 +32,7 @@ if __name__ == "__main__":
         if user_input == "c":
             print("Continuing the current run.")
             print(robot.get_run_status(run_id))
-            robot.play_run(run_id=run_id)
+            robot.resume_run(run_id=run_id)
         elif user_input == "m":
             print("Re-uploading and rerunning the protocol.")
             # Re-upload and rerun the protocol again
