@@ -34,6 +34,7 @@ class FlexRuns:
         - `pause_run`: Pauses an ongoing run.
         - `play_run`: Starts or resumes a run.
         - `stop_run`: Stops a running protocol.
+        - `resume_run`: Resumes a running protocol
         - `set_lights`: Sets the status of the Flex system's lights.
         - `get_lights`: Fetches the current light status.
         - `home`: Sends a homing command to the Flex robot to return to its reference position.
@@ -422,6 +423,32 @@ class FlexRuns:
         logging.info(f"POST: stopping run from {runs_url} with ID {run_id}")
         actions_url = f"{runs_url}/{run_id}/actions"
         action_payload = {"data": {"actionType": FlexActions.STOP.value}}
+        return FlexRuns._send_request("POST", actions_url, action_payload)
+
+    @staticmethod
+    def resume_run(runs_url: str, run_id: str) -> dict:
+        """
+        Resumes a specific run by sending a POST request to the specified URL.
+
+        Constructs an action URL by appending the `run_id` to the `runs_url` and sends a
+        POST request to trigger the stop action for the specified run.
+
+        Args:
+            runs_url (str): The base URL for the runs.
+            run_id (str): The unique identifier of the run to be stopped.
+
+        Returns:
+            dict: The JSON response from the server if the request is successful, indicating the result of the resume action.
+
+        Logs:
+            Logs the POST operation, including the target URL and run ID, for debugging and informational purposes.
+
+        Raises:
+            requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
+        """
+        logging.info(f"POST: resuming run from {runs_url} with ID {run_id}")
+        actions_url = f"{runs_url}/{run_id}/actions"
+        action_payload = {"data": {"actionType": FlexActions.RESUME.value}}
         return FlexRuns._send_request("POST", actions_url, action_payload)
 
     @staticmethod

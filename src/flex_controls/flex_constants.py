@@ -170,6 +170,7 @@ class FlexActions(Enum):
     PAUSE = "pause"
     PLAY = "play"
     STOP = "stop"
+    RESUME = "resume"
 
 
 class FlexLights(Enum):

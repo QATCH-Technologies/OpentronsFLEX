@@ -86,7 +86,8 @@ class OpentronsFlex:
             ip = self.find_ip()
 
         self._set_robot_ipv4(ip)
-        logging.info(f"Running flex at IPv4: {self._get_robot_ipv4()}:{HTTP_PORT}")
+        logging.info(
+            f"Running flex at IPv4: {self._get_robot_ipv4()}:{HTTP_PORT}")
         self._set_base_url(f"http://{self._get_robot_ipv4()}:{HTTP_PORT}")
         self._set_runs_url(f"{self._get_base_url()}/runs")
         self._set_protocols_url(f"{self._get_base_url()}/protocols")
@@ -183,9 +184,11 @@ class OpentronsFlex:
             location.value,
             labware_definition,
         )
-        labware = FlexLabware(location=location, labware_definition=labware_definition)
+        labware = FlexLabware(
+            location=location, labware_definition=labware_definition)
         if self.available_labware.get(location) is not None:
-            logging.error("Labware already loaded at location: %s", location.value)
+            logging.error(
+                "Labware already loaded at location: %s", location.value)
             raise Exception(
                 f"Labware {labware.get_display_name()} not available in slot {labware.get_location().value}."
             )
@@ -573,7 +576,8 @@ class OpentronsFlex:
             logging.error(f"Protocol '{protocol_name}' not available.")
             raise ValueError(f"Protocol '{protocol_name}' not available.")
         protocol_id = protocol.get("id")
-        logging.info(f"Deleting '{protocol_name}' protocol with ID: {protocol_id}")
+        logging.info(
+            f"Deleting '{protocol_name}' protocol with ID: {protocol_id}")
         try:
             response = FlexRuns.delete_protocol(
                 protocols_url=self._get_protocols_url(), protocol_id=protocol_id
@@ -608,8 +612,10 @@ class OpentronsFlex:
         """
         logging.info(f"Uploading protocol from file: {protocol_file_path}")
         if not os.path.exists(protocol_file_path):
-            logging.error(f"Protocol file path does not exist: {protocol_file_path}")
-            raise Exception(f"Protocol path {protocol_file_path} does not exist")
+            logging.error(
+                f"Protocol file path does not exist: {protocol_file_path}")
+            raise Exception(
+                f"Protocol path {protocol_file_path} does not exist")
 
         try:
             response = FlexRuns.upload_protocol(
@@ -653,8 +659,10 @@ class OpentronsFlex:
 
         # Check if protocol file and all custom labware files exist
         if not os.path.exists(protocol_file_path):
-            logging.error(f"Protocol file path does not exist: {protocol_file_path}")
-            raise Exception(f"Protocol file path does not exist: {protocol_file_path}")
+            logging.error(
+                f"Protocol file path does not exist: {protocol_file_path}")
+            raise Exception(
+                f"Protocol file path does not exist: {protocol_file_path}")
 
         for labware_file_path in custom_labware_file_paths:
             if not os.path.exists(labware_file_path):
@@ -669,7 +677,8 @@ class OpentronsFlex:
             response = FlexRuns.upload_protocol_custom_labware(
                 protocols_url=self._get_protocols_url(),
                 protocol_file_path=protocol_file_path,
-                labware_file_paths=list(custom_labware_file_paths),  # Updated parameter
+                labware_file_paths=list(
+                    custom_labware_file_paths),  # Updated parameter
             )
             self.update_available_protocols()
             logging.info("Protocol uploaded with custom labware successfully.")
@@ -748,7 +757,8 @@ class OpentronsFlex:
                     }
 
         # Extract only protocol names and their corresponding IDs
-        result = {name: data["id"] for name, data in self.available_protocols.items()}
+        result = {name: data["id"]
+                  for name, data in self.available_protocols.items()}
 
         return result
 
@@ -771,11 +781,13 @@ class OpentronsFlex:
         """
         logging.info(f"Deleting run with ID: {run_id}")
         try:
-            response = FlexRuns.delete_run(runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.delete_run(
+                runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} deleted successfully. ")
             return response
         except Exception as e:
-            logging.error(f"Failed to delete run with ID {run_id}: {e}", exc_info=True)
+            logging.error(
+                f"Failed to delete run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def get_run_status(self, run_id: str) -> str:
@@ -850,11 +862,13 @@ class OpentronsFlex:
         """
         logging.info(f"Pausing run with ID: {run_id}")
         try:
-            response = FlexRuns.pause_run(runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.pause_run(
+                runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} paused successfully. ")
             return response
         except Exception as e:
-            logging.error(f"Failed to pause run with ID {run_id}: {e}", exc_info=True)
+            logging.error(
+                f"Failed to pause run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def play_run(self, run_id: int) -> str:
@@ -876,11 +890,13 @@ class OpentronsFlex:
         """
         logging.info(f"Playing run with ID: {run_id}")
         try:
-            response = FlexRuns.play_run(runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.play_run(
+                runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} started successfully. ")
             return response
         except Exception as e:
-            logging.error(f"Failed to play run with ID {run_id}: {e}", exc_info=True)
+            logging.error(
+                f"Failed to play run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def stop_run(self, run_id: str) -> str:
@@ -902,11 +918,41 @@ class OpentronsFlex:
         """
         logging.info(f"Stopping run with ID: {run_id}")
         try:
-            response = FlexRuns.stop_run(runs_url=self._get_runs_url(), run_id=run_id)
+            response = FlexRuns.stop_run(
+                runs_url=self._get_runs_url(), run_id=run_id)
             logging.info(f"Run {run_id} stopped successfully. ")
             return response
         except Exception as e:
-            logging.error(f"Failed to stop run with ID {run_id}: {e}", exc_info=True)
+            logging.error(
+                f"Failed to stop run with ID {run_id}: {e}", exc_info=True)
+            raise
+
+    def resume_run(self, run_id: str) -> str:
+        """
+        Resumes the execution of a protocol run with the given run ID.
+
+        This method communicates with the FlexRuns service to resume the run with the
+        specified `run_id`. If the operation is successful, it logs the success and
+        returns the response. If an error occurs, it logs the error and raises an exception.
+
+        Args:
+            run_id (str): The ID of the run to restume.
+
+        Returns:
+            str: The response from the FlexRuns service indicating the result of the stop operation.
+
+        Raises:
+            Exception: If the run resume operation fails due to a service error.
+        """
+        logging.info(f"Resuming run with ID: {run_id}")
+        try:
+            response = FlexRuns.resume_run(
+                runs_url=self._get_runs_url(), run_id=run_id)
+            logging.info(f"Run {run_id} stopped successfully. ")
+            return response
+        except Exception as e:
+            logging.error(
+                f"Failed to stop run with ID {run_id}: {e}", exc_info=True)
             raise
 
     def lights_on(self) -> str:
@@ -1180,7 +1226,8 @@ class OpentronsFlex:
             )
             if result.returncode != 0:
                 logging.error(f"Cannot communicate with IP address: {ipv4}")
-                raise ConnectionError(f"Cannot communicate with IP address: {ipv4}")
+                raise ConnectionError(
+                    f"Cannot communicate with IP address: {ipv4}")
         except Exception as e:
             logging.error(
                 f"Error during communication check for IP address {ipv4}: {e}",
