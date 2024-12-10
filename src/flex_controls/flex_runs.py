@@ -316,7 +316,8 @@ class FlexRuns:
         Raises:
             requests.exceptions.RequestException: If the HTTP request fails (handled internally by `_send_request`).
         """
-        logging.info(f"GET: fetching run status from {runs_url} with ID {run_id}")
+        logging.info(
+            f"GET: fetching run status from {runs_url} with ID {run_id}")
         status_url = f"{runs_url}/{run_id}"
         return FlexRuns._send_request("GET", status_url)
 
